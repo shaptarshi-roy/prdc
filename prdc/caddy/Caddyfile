@@ -1,0 +1,45 @@
+# P-RDC ingest gateway
+#
+# Terminates TLS, enforces the DTS client certificate, and reverse-proxies
+# requests to PHP-FPM via a Unix socket in the shared `fpm_socket` volume.
+#
+# Why a Unix socket instead of api:9000?
+#   The api container also has access to the `internal` network where the
+#   db and worker live. If FPM listened on TCP, a compromised worker could
+#   connect directly and forge the X-Client-Cert-* headers, bypassing this
+#   proxy entirely. A Unix socket has no IP surface — only Caddy (which
+#   mounts the same volume) can reach it.
+
+localhost {
+
+    tls internal {
+        client_auth {
+            mode          require_and_verify
+            trust_pool    file /etc/caddy/ca.crt
+        }
+    }
+
+    @api {
+        path /batches* /researcher* /docs* /.well-known/*
+    }
+
+    handle @api {
+    	root * /app/public
+
+    	# Forward-auth data for the Symfony firewall.
+    	request_header X-Client-Cert-Subject   {tls_client_subject}
+    	request_header X-Client-Cert-Serial    {tls_client_serial}
+    	request_header X-Client-Cert-Fp        {tls_client_fingerprint}
+
+	php_fastcgi unix//var/run/fpm/php-fpm.sock
+    }
+
+    handle {
+        respond "Not found" 404
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}

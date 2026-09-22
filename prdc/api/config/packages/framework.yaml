@@ -1,0 +1,29 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: false
+    handle_all_throwables: true
+
+    php_errors:
+        log: true
+
+    router:
+        utf8: true
+
+    messenger:
+        failure_transport: failed
+        transports:
+            validation:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    use_notify: true
+                    check_delayed_interval: 60000
+                retry_strategy:
+                    max_retries: 3
+                    delay: 2000
+                    multiplier: 3
+                    max_delay: 60000
+            failed:
+                dsn: 'doctrine://default?queue_name=failed'
+
+        routing:
+            App\Message\ValidateBatch: validation

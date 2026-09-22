@@ -1,0 +1,127 @@
+# P-RDC MDS-PT ingest stack
+#
+# Network segmentation: api and worker do NOT share any network. They
+# both reach db, but on separate Docker networks. Combined with the
+# Unix-socket FPM listener, this means:
+#
+#   - Caddy can only reach api via the shared fpm_socket volume.
+#   - api can only reach db (on api-db).
+#   - worker can only reach db (on worker-db).
+#   - worker cannot reach api at the IP layer. Period.
+#
+# Three database roles, one per consumer (defense in depth):
+#   api_role     ← used by the api container; cannot read or write
+#                  any data table. Only batch_log + Messenger transport.
+#   worker_role  ← used by the worker container; writes data tables,
+#                  cannot create new batches.
+#   researcher   ← read-only on the researcher view.
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: mds_pt
+      POSTGRES_USER: mds                       # superuser; used only by entrypoint
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    secrets:
+      - db_password
+      - api_db_password
+      - worker_db_password
+      - researcher_db_password
+    networks: [api-db, worker-db]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mds -d mds_pt"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./api
+      target: runtime
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: "postgresql://api_role@db:5432/mds_pt?serverVersion=17"
+      DATABASE_PASSWORD_FILE: /run/secrets/api_db_password
+      MESSENGER_TRANSPORT_DSN: "doctrine://default?queue_name=validation"
+      BATCH_STORAGE_PATH: /var/batches
+    volumes:
+      - batches:/var/batches
+      # PHP-FPM listens on a Unix socket here. Caddy mounts the same
+      # volume so it can reach FPM via FastCGI. No TCP listener.
+      - fpm_socket:/var/run/fpm
+    secrets:
+      - api_db_password
+    # api is ONLY on api-db. It has no route to worker. Caddy reaches it
+    # via the shared fpm_socket volume, not via a network.
+    networks: [api-db]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./api
+      target: runtime
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/worker.conf"]
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: "postgresql://worker_role@db:5432/mds_pt?serverVersion=17"
+      DATABASE_PASSWORD_FILE: /run/secrets/worker_db_password
+      MESSENGER_TRANSPORT_DSN: "doctrine://default?queue_name=validation"
+      BATCH_STORAGE_PATH: /var/batches
+      BATCH_RETENTION_DAYS: "30"
+    volumes:
+      - batches:/var/batches
+    secrets:
+      - worker_db_password
+    # worker is ONLY on worker-db. It has no route to api or to Caddy.
+    networks: [worker-db]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2
+    ports:
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/ca.crt:/etc/caddy/ca.crt:ro
+      - caddy_data:/data
+      # Shared with the api container — this is the only path between
+      # Caddy and api. No network link between them.
+      - fpm_socket:/var/run/fpm
+    networks: [public]
+
+networks:
+  # Inbound TLS only. Caddy is alone here.
+  public:
+
+  # api ↔ db. No worker, no proxy.
+  api-db:
+    internal: true   # no egress to the internet
+
+  # worker ↔ db. No api, no proxy.
+  worker-db:
+    internal: true   # no egress to the internet
+
+volumes:
+  pgdata:
+  batches:
+  caddy_data:
+  fpm_socket:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  api_db_password:
+    file: ./secrets/api_db_password.txt
+  worker_db_password:
+    file: ./secrets/worker_db_password.txt
+  researcher_db_password:
+    file: ./secrets/researcher_db_password.txt

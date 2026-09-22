@@ -1,0 +1,27 @@
+api_platform:
+    title: 'P-RDC MDS-PT API'
+    version: '1.0.0'
+    description: 'Submission and read endpoints for the MDS-PT research database.'
+
+    mapping:
+        paths: ['%kernel.project_dir%/src/Entity']
+
+    formats:
+        json:    ['application/json']
+        jsonld:  ['application/ld+json']
+    patch_formats:
+        json:    ['application/merge-patch+json']
+
+    # No Swagger UI in production; the OpenAPI document is still served
+    # at /docs.json and facility clients can consume it directly.
+    swagger:
+        versions: [3]
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
+
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']

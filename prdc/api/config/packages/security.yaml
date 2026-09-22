@@ -1,0 +1,49 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\InMemoryUser: 'auto'
+
+    # Facilities and researchers are provisioned out-of-band; the client
+    # certificate subject passed through from Caddy is the identity. In a
+    # real deployment this would be a database-backed provider keyed by
+    # cert fingerprint or subject DN.
+    providers:
+        app_users:
+            memory:
+                users:
+                    # Placeholder dev identities only. Replace with a real
+                    # provider (Doctrine, LDAP) in production.
+                    facility_f008: { password: '', roles: ['ROLE_FACILITY'] }
+                    researcher_1:  { password: '', roles: ['ROLE_RESEARCHER'] }
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        # Batch submission: requires a client certificate + JWT.
+        batches:
+            pattern: ^/batches
+            stateless: true
+            provider: app_users
+            jwt: ~
+
+        # Researcher reads: JWT only, no mTLS (served over a different host
+        # or path in production).
+        researcher:
+            pattern: ^/researcher
+            stateless: true
+            provider: app_users
+            jwt: ~
+
+        main:
+            pattern: ^/
+            stateless: true
+            security: false
+
+    access_control:
+        - { path: ^/batches,    roles: ROLE_FACILITY }
+        - { path: ^/researcher, roles: ROLE_RESEARCHER }
+        - { path: ^/docs,       roles: PUBLIC_ACCESS }
+
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_FACILITY, ROLE_RESEARCHER]

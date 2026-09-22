@@ -1,0 +1,71 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        # The generated schema uses custom ENUM types we don't want Doctrine
+        # to introspect. Mapping all unknown types to 'string' lets the ORM
+        # round-trip them as PHP strings without needing custom type classes.
+        mapping_types:
+            sex_t:                              string
+            timepoint_t:                        string
+            geschlecht_t_t:                     string
+            art_und_setting_einrichtung_t:      string
+            traeger_t:                          string
+            behandelte_altersgruppe_t:          string
+            angebotene_pt_verfahren_t:          string
+            pt_setting_t:                       string
+            psychthg_fassung_t:                 string
+            fachkunde_schwerpunkt_t:            string
+            therapeutische_orientierung_t:      string
+            gender_t:                           string
+            familienstand_t:                    string
+            mehrlingsgeburt_t:                  string
+            erwerbsunfaehig_t:                  string
+            erwerbsunfaehig_psy_t:              string
+            nettoeinkommen_jahr_hh_t:           string
+            sport_aktuell_t:                    string
+            mnspiel_t:                          string
+            mnsoznw_t:                          string
+            behandlung_dich_t:                  string
+            diagnose_selbst_dich_t:             string
+            diagnose_fam_dich_t:                string
+            ace_8_t:                            string
+            p_faktor_item_1_t:                  string
+            mehm_gz_t:                          string
+            mehm_gali_1_t:                      string
+            eq5d5l_3_t:                         string
+            soc_1_t:                            string
+            loneliness_sidf_t:                  string
+            ipsm_24_t:                          string
+            cgi_s_sr_t:                         string
+            besca_dm_oa_t:                      string
+            plausible_year:                     smallint
+            plz_de:                             integer
+            vas_100:                            smallint
+            vas_10:                             smallint
+
+    orm:
+        auto_generate_proxy_classes: false
+        enable_lazy_ghost_objects: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        auto_mapping: true
+        mappings:
+            App:
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Entity'
+                prefix: 'App\Entity'
+                alias: App
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            metadata_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+    framework:
+        cache:
+            pools:
+                doctrine.system_cache_pool:
+                    adapter: cache.system
