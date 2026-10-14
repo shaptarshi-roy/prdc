@@ -187,7 +187,7 @@ curl --cert caddy/F008.crt --key caddy/F008.key --cacert caddy/ca.crt \
 ```
 
 `GET /batches/{id}/errors` returns the per-row quarantine report (row
-index, gate, error code, field — never the row contents).
+index, gate, error code, field, never the row contents).
 
 Observable states:
 
@@ -213,7 +213,7 @@ and are never deleted. Override the run time with `PURGE_AT=HH:MM`.
 ## Adding a gate
 
 1. Create a class in `api/src/Validation/Gate/` that implements `ValidationGateInterface`.
-2. That's it — `services.yaml` tags it via `_instanceof` and the pipeline sorts by `number()`.
+2. `services.yaml` tags it via `_instanceof` and the pipeline sorts by `number()`.
 
 ## Regenerating the schema
 
