@@ -231,16 +231,3 @@ The generator also emits the roles, grants and Messenger queue table, so
 edit those in `generate_schema.py`, not only in the generated file. Then
 rebuild the database for a fresh environment, or write a Doctrine
 migration for a non-destructive update in production.
-
-## Known gaps
-
-- **Client cert not bound to the JWT.** Caddy requires a valid client
-  cert, but the app authenticates only by JWT and ignores the forwarded
-  `X-Client-Cert-*` headers. It should check that the cert is the DTS's.
-- **Secrets baked into the image.** `api/.env` (`APP_SECRET`,
-  `JWT_PASSPHRASE`) and the JWT private key are copied into the image at
-  build time; they should be mounted at runtime as Docker secrets.
-- **Composer advisory blocking is disabled** (`config.policy.advisories.block: false`
-  in `api/composer.json`).
-- **No researcher endpoints yet.** The `/researcher` firewall, access rule
-  and Caddy route exist, but no routes are implemented.
