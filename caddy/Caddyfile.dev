@@ -1,0 +1,43 @@
+# P-RDC ingest gateway — DEV / plain-HTTP variant
+#
+# No TLS, no client certificates. For testing api/worker/db locally only.
+# Never deploy this file. Use with docker-compose.http.yml.
+
+{
+    auto_https off
+}
+
+:80 {
+    @api {
+        path /batches* /researcher* /docs* /.well-known/*
+    }
+
+    handle @api {
+
+        # No mTLS here, so there is no cert identity to forward. Strip any
+        # client-supplied copies so they can't be spoofed over plain HTTP.
+        request_header -X-Client-Cert-Subject
+        request_header -X-Client-Cert-Serial
+        request_header -X-Client-Cert-Fp
+
+        # /app/public lives only in the api container, so php_fastcgi's
+        # file-existence checks fail here and nothing gets proxied. Route
+        # everything to Symfony's front controller explicitly instead.
+        rewrite * /index.php
+        reverse_proxy unix//var/run/fpm/php-fpm.sock {
+            transport fastcgi {
+                root  /app/public
+                split .php
+            }
+        }
+    }
+
+    handle {
+        respond "Not found" 404
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}

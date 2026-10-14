@@ -1,0 +1,6 @@
+# API Platform routes (docs, entrypoint, contexts). Kept in source so the
+# Flex recipe doesn't add its own /api-prefixed copy at build time.
+# No prefix: docs are served at /docs.json, which Caddy routes.
+api_platform:
+    resource: .
+    type: api_platform

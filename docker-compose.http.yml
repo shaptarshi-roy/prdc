@@ -1,0 +1,12 @@
+# DEV override: plain HTTP on port 80, no certificates.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.http.yml up -d
+#
+# Never use in production — it disables mTLS entirely.
+
+services:
+  proxy:
+    ports: !override
+      - "0.0.0.0:80:80"
+    volumes:
+      - ./caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro

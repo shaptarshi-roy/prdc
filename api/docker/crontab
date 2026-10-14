@@ -1,0 +1,11 @@
+# P-RDC worker crontab
+#
+# Runs as user `app`. The wrapper script restores the container's env
+# vars (cron jobs run with a minimal environment by default).
+# Time chosen at 03:17 — off-peak, avoids the on-the-hour cron herd.
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+SHELL=/bin/sh
+
+# m  h  dom mon dow   command
+17 3   *   *   *      /app/docker/run-purge.sh >> /proc/1/fd/1 2>> /proc/1/fd/2

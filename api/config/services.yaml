@@ -1,0 +1,30 @@
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $storagePath: '%env(BATCH_STORAGE_PATH)%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller/'
+        tags: ['controller.service_arguments']
+
+    # All six validation gates implement ValidationGate and get collected
+    # automatically via instanceof-tagging. The pipeline receives them
+    # in the order they're registered.
+    _instanceof:
+        App\Validation\Gate\ValidationGateInterface:
+            tags: ['app.validation_gate']
+
+    App\Validation\ValidationPipeline:
+        arguments:
+            $gates: !tagged_iterator app.validation_gate

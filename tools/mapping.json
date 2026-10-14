@@ -1,0 +1,1014 @@
+{
+  "_comment": [
+    "Mapping from CSV column name to (table, codebook_ref, is_multi, type_hint, notes).",
+    "",
+    "codebook_ref formats:",
+    "  'adult:VarName'        → look up in MDS_Adult_codebook.json at top level",
+    "  'pt:/Module/Section/.../Item'   → walk MDS_PT_codebook.json by path",
+    "  null                   → no codebook ref; must provide type_hint",
+    "",
+    "type_hint (only used when codebook_ref is null or codebook is numeric/free-form):",
+    "  'bool', 'smallint', 'integer', 'numeric(4,1)', 'text', 'date',",
+    "  'vas_100', 'vas_10', 'plz_de', 'plausible_year',",
+    "  'uuid', 'iso3166_3', 'iso639_3'",
+    "",
+    "is_multi: true → emit TEXT[] / ENUM[]; false → scalar",
+    "",
+    "If codebook_ref is set AND type_hint is null AND Antwortoptionen is a list,",
+    "generator emits a dedicated ENUM type named <column>_t."
+  ],
+  "_tables": {
+    "facilities": "primary key: facility_id",
+    "therapists": "primary key: therapist_id, FK: facility_id",
+    "patients_adult": "primary key: patient_id",
+    "treatments": "primary key: treatment_id, FKs: patient_id, therapist_id, facility_id",
+    "assessments": "primary key: assessment_id (generated); (treatment_id, timepoint) unique",
+    "process_ratings": "primary key: process_id (generated); (treatment_id, timepoint) unique"
+  },
+  "columns": {
+    "facility_id": {
+      "table": "facilities",
+      "codebook_ref": null,
+      "type_hint": "text",
+      "notes": "pseudonym from facility"
+    },
+    "plz_einrichtung": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungssetting/PLZ der Einrichtung",
+      "type_hint": "plz_de"
+    },
+    "art_und_setting_einrichtung": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungssetting/Art und Setting der Einrichtung",
+      "is_multi": false
+    },
+    "traeger": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungssetting/Träger",
+      "is_multi": false
+    },
+    "kostenuebername": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungssetting/Kostenübernahme",
+      "is_multi": true
+    },
+    "behandelte_altersgruppe": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungssetting/behandelte Altersgruppe",
+      "is_multi": true
+    },
+    "groesse_einzugsgebiet": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Größe des Einzugsgebiets",
+      "type_hint": "integer",
+      "nonnegative": true
+    },
+    "n_fachpsychotherapeuten": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Anzahl beschäftigter FachpsychotherapeutInnen",
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "n_fachärzte": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Anzahl beschäftigter FachärztInnen",
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "bettenanzahl": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Bettenanzahl",
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "behandlungsfaelle_pro_jahr": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Behandlungsfälle pro Jahr",
+      "type_hint": "integer",
+      "nonnegative": true
+    },
+    "patienten_pro_jahr": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Einrichtungsgröße/Anzahl behandelter Patienten pro Jahr",
+      "type_hint": "integer",
+      "nonnegative": true
+    },
+    "angebotene_pt_verfahren": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Behandlungskonzept/-schwerpunkt/Angebotene PT Verfahren",
+      "is_multi": true
+    },
+    "angebot_stoerungsspezifisch": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Behandlungskonzept/-schwerpunkt/Spezifische Behandlungsangebote_störungsspezifisch",
+      "is_multi": true
+    },
+    "pt_setting": {
+      "table": "facilities",
+      "codebook_ref": "pt:/Einrichtungsmodul/Behandlungskonzept/-schwerpunkt/In welchem Setting findet Psychotherapie statt?",
+      "is_multi": true,
+      "notes": "Therapy FORMAT (Gruppen/Einzel/Mehrpersonensetting) — NOT to be confused with the therapie_setting enum (ambulant/teilstationär/stationär), which lives on the treatments table as Therapie_Setting."
+    },
+    "therapist_id": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "text"
+    },
+    "Geburtsjahr_T": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "plausible_year",
+      "notes": "renamed from codebook Geburtsjahr to disambiguate from patient Geb_jahr",
+      "not_null": true
+    },
+    "Geschlecht_T": {
+      "table": "therapists",
+      "codebook_ref": "pt:/TherapeutinnenModul/Soziodemographie/Geschlecht",
+      "is_multi": false,
+      "not_null": true
+    },
+    "hat_Approbation_PsychThG": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "bool",
+      "not_null": true
+    },
+    "Approbation_Jahr": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "plausible_year"
+    },
+    "PsychThG_Fassung": {
+      "table": "therapists",
+      "codebook_ref": "pt:/TherapeutinnenModul/Ausbildung Qualifikation/Approbation PsychThG/Folgefragen/Fragen/Fassung",
+      "is_multi": false
+    },
+    "hat_Fachkunde": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "bool",
+      "not_null": true
+    },
+    "Fachkunde_Schwerpunkt": {
+      "table": "therapists",
+      "codebook_ref": "pt:/TherapeutinnenModul/Ausbildung Qualifikation/Fachkunde/Folgefragen/Fragen/Schwerpunkt",
+      "is_multi": true
+    },
+    "Fachkunde_Richtlinienverfahren": {
+      "table": "therapists",
+      "codebook_ref": "pt:/TherapeutinnenModul/Ausbildung Qualifikation/Fachkunde/Folgefragen/Fragen/Richtlinienverfahren",
+      "is_multi": true
+    },
+    "therapeutische_Orientierung": {
+      "table": "therapists",
+      "codebook_ref": "pt:/TherapeutinnenModul/Therapeutische Aktivität/therapeutische Orientierung",
+      "is_multi": true
+    },
+    "Sitzungen_pro_Woche_letztes_Jahr": {
+      "table": "therapists",
+      "codebook_ref": null,
+      "type_hint": "numeric(4,1)",
+      "range": [
+        0,
+        80
+      ]
+    },
+    "patient_id": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "text"
+    },
+    "PLZv2": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:PLZv2",
+      "type_hint": "plz_de"
+    },
+    "Geb_Monat": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Geb_Monat",
+      "type_hint": "smallint",
+      "range": [
+        1,
+        12
+      ]
+    },
+    "Geb_jahr": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Geb_jahr",
+      "type_hint": "plausible_year",
+      "not_null": true
+    },
+    "Gewicht": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Gewicht",
+      "type_hint": "numeric(4,1)",
+      "range": [
+        20,
+        300
+      ]
+    },
+    "Groesse": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Groesse",
+      "type_hint": "smallint",
+      "range": [
+        100,
+        230
+      ]
+    },
+    "Sex": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Sex",
+      "is_multi": false,
+      "not_null": true
+    },
+    "Gender": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Gender",
+      "is_multi": true
+    },
+    "Familienstand": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Familienstand",
+      "is_multi": true
+    },
+    "Kinder": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Kinder",
+      "type_hint": "bool"
+    },
+    "Kinder_Anzahl": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        20
+      ]
+    },
+    "Migration_dich": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Migration_dich",
+      "type_hint": "bool"
+    },
+    "Mehrlingsgeburt": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Mehrlingsgeburt",
+      "type_hint": "bool"
+    },
+    "Haushalt_anzahl": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Haushalt_anzahl",
+      "type_hint": "smallint",
+      "range": [
+        1,
+        20
+      ]
+    },
+    "Schulabschluss": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Schulabschluss",
+      "is_multi": false
+    },
+    "Bildungsabschluss": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Bildungsabschluss",
+      "is_multi": false
+    },
+    "Berufstaetig": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Berufstaetig",
+      "is_multi": false
+    },
+    "Erwerbsunfaehig": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Erwerbsunfaehig",
+      "is_multi": false
+    },
+    "Erwerbsunfaehig_psy": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Erwerbsunfaehig_psy",
+      "is_multi": false
+    },
+    "Nettoeinkommen_jahr_hh": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Nettoeinkommen_jahr_hh",
+      "is_multi": false
+    },
+    "SSS": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_10"
+    },
+    "Sport_aktuell": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Sport_aktuell",
+      "is_multi": false
+    },
+    "MNspiel": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:MNspiel",
+      "is_multi": false
+    },
+    "MNsoznw": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:MNsoznw",
+      "is_multi": false
+    },
+    "Erstkontakt": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Erstkontakt",
+      "type_hint": "bool"
+    },
+    "Erstkontakt_alter": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        120
+      ]
+    },
+    "Behandlung_dich": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Behandlung_dich",
+      "type_hint": "bool"
+    },
+    "Diagnose_selbst_dich": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Diagnose_selbst_dich",
+      "type_hint": "bool"
+    },
+    "Diagnose_PD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_DD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_BD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_AD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_OCD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_PTSD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_SD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_ED": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_PBD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_DMD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_ADHD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_ASD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_SUD": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_D": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "Diagnose_fam_dich": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Diagnose_fam_dich",
+      "is_multi": false
+    },
+    "Suizidversuch": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:Suizidversuch",
+      "type_hint": "bool"
+    },
+    "Suizidversuche_anzahl": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Hilfesystem_Erfahrung": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "ACE_8": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:ACE_8",
+      "type_hint": "bool"
+    },
+    "MEHM_GZ": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:MEHM_GZ",
+      "is_multi": false
+    },
+    "MEHM_GALI_1": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:MEHM_GALI_1",
+      "is_multi": false
+    },
+    "EQ5D5L_3": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:EQ5D5L_3",
+      "is_multi": false
+    },
+    "vas_PSYBEL": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_100"
+    },
+    "vas_SOZEX100": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_100"
+    },
+    "vas_SOZDIS100": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_100"
+    },
+    "vas_STIGMA100": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_100"
+    },
+    "vas_SATIS100": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "vas_100"
+    },
+    "SoC_1": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:SoC_1",
+      "is_multi": false
+    },
+    "LONELINESS_SIDF": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:LONELINESS_SIDF",
+      "is_multi": false
+    },
+    "IPSM_24": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:IPSM_24",
+      "is_multi": false
+    },
+    "CGI_S_sr": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:CGI_S_sr",
+      "is_multi": false
+    },
+    "BESCA_DM_Oa": {
+      "table": "patients_adult",
+      "codebook_ref": "adult:BESCA_DM_Oa",
+      "is_multi": false
+    },
+    "PNRS_sucht_mutter": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "PNRS_psych_mutter": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "PNRS_rauchen_schwangerschaft": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "bool"
+    },
+    "CTS_emotionale_misshandlung": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        4
+      ]
+    },
+    "CTS_koerperliche_misshandlung": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        4
+      ]
+    },
+    "CTS_sexueller_missbrauch": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        4
+      ]
+    },
+    "CTS_emotionale_vernachlaessigung": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        4
+      ]
+    },
+    "CTS_koerperliche_vernachlaessigung": {
+      "table": "patients_adult",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "range": [
+        0,
+        4
+      ]
+    },
+    "treatment_id": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "text"
+    },
+    "Therapie_Setting": {
+      "table": "treatments",
+      "codebook_ref": "pt:/Behandlungsmodul/Behandlungssetting/Therapie-Setting",
+      "is_multi": true,
+      "not_null": true
+    },
+    "Therapie_Format": {
+      "table": "treatments",
+      "codebook_ref": "pt:/Behandlungsmodul/Behandlungssetting/Therapie-Format",
+      "is_multi": true,
+      "not_null": true
+    },
+    "Video_Sitzungen": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "bool",
+      "not_null": true
+    },
+    "Sprache_der_Therapie": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "iso639_3",
+      "not_null": true
+    },
+    "Dolmetscher_Einbezug": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "bool",
+      "not_null": true
+    },
+    "Sprechstunden_vor_Behandlung": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Probatorische_Sitzungen": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Einzeltherapie_50min": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Gruppentherapie_100min": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Bezugspersonengespraeche": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "smallint",
+      "nonnegative": true
+    },
+    "Durchschnittliche_Frequenz": {
+      "table": "treatments",
+      "codebook_ref": "pt:/Behandlungsmodul/Behandlungsumfang / -frequenz/Behandlungsfrequenz und -zeitraum/Durchschnittliche Frequenz",
+      "is_multi": false
+    },
+    "Behandlungsbeginn": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "date",
+      "not_null": true
+    },
+    "Behandlungsende_Datum": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "date",
+      "not_null": true
+    },
+    "Behandlungsende_Art": {
+      "table": "treatments",
+      "codebook_ref": "pt:/Behandlungsmodul/Abschluss der Behandlung/Behandlungsende",
+      "is_multi": false,
+      "not_null": true
+    },
+    "TherapeutInnen_Wechsel": {
+      "table": "treatments",
+      "codebook_ref": null,
+      "type_hint": "bool",
+      "not_null": true
+    },
+    "timepoint": {
+      "table": "assessments",
+      "codebook_ref": null,
+      "type_hint": "timepoint_t",
+      "not_null": true
+    },
+    "assessed_at": {
+      "table": "assessments",
+      "codebook_ref": null,
+      "type_hint": "date",
+      "not_null": true
+    },
+    "P_Faktor_Item_1": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 1"
+    },
+    "P_Faktor_Item_2": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 2"
+    },
+    "P_Faktor_Item_3": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 3"
+    },
+    "P_Faktor_Item_4": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 4"
+    },
+    "P_Faktor_Item_5": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 5"
+    },
+    "P_Faktor_Item_6": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 6"
+    },
+    "P_Faktor_Item_7": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 7"
+    },
+    "P_Faktor_Item_8": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/P-Factor/P-Faktor Item 8"
+    },
+    "Spectra_SOM": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra SOM"
+    },
+    "Spectra_INT_Depression_Anhedonie": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Depression/Anhedonie"
+    },
+    "Spectra_INT_Item_1": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Depression/Spectra INT Item 1"
+    },
+    "Spectra_INT_Item_2": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Depression/Spectra INT Item 2"
+    },
+    "Spectra_INT_Item_3": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/GAD/Spectra INT Item 3"
+    },
+    "Spectra_INT_Item_4": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/GAD/Spectra INT Item 4"
+    },
+    "Spectra_INT_Item_5": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/GAD/Spectra INT Item 5"
+    },
+    "Spectra_INT_Item_6": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Stress/Spectra INT Item 6"
+    },
+    "Spectra_INT_Item_7": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Stress/Spectra INT Item 7"
+    },
+    "Spectra_INT_Angst_Panik": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/Panik"
+    },
+    "Spectra_INT_Angst_Phobie": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/Phobie"
+    },
+    "Spectra_INT_Angst_Soziale_Phobie": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Angst/Soziale Phobie"
+    },
+    "Spectra_INT_Item_11": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Trauma: Kritische Lebensereignisse/Spectra INT Item 11"
+    },
+    "Spectra_INT_Item_12": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Trauma: Kritische Lebensereignisse/Spectra INT Item 12"
+    },
+    "Spectra_INT_Essverhalten_Appetit": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/Essverhalten: Appetit"
+    },
+    "EatingDisorder_Bulimic": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/EatingDisorder_Bulimic"
+    },
+    "EatingDisorder_Anorectic": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/EatingDisorder_Anorectic"
+    },
+    "SNAQ_3": {
+      "table": "assessments",
+      "codebook_ref": "adult:SNAQ_3",
+      "type_hint": "bool"
+    },
+    "EAT26D_23": {
+      "table": "assessments",
+      "codebook_ref": "adult:EAT26D_23",
+      "is_multi": false
+    },
+    "OCD": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra INT/TD/OCD"
+    },
+    "Spectra_TD_Item_1": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra TD/Thought Disorder/Spectra TD Item 1"
+    },
+    "Spectra_TD_Item_2": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra TD/Thought Disorder/Spectra TD Item 2"
+    },
+    "Spectra_TD_Item_3": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra TD/Thought Disorder/Spectra TD Item 3"
+    },
+    "Spectra_TD_Item_4": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra TD/Thought Disorder/Spectra TD Item 4"
+    },
+    "Spectra_TD_Item_5": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra TD/Thought Disorder/Spectra TD Item 5"
+    },
+    "Soziale_Anhedonie": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra DET/Soziale Anhedonie"
+    },
+    "Spectra_DET_Item_2": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra DET/Detachment/Spectra DET Item 2"
+    },
+    "Spectra_DET_Item_3": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra DET/Detachment/Spectra DET Item 3"
+    },
+    "Spectra_DET_Item_4": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra DET/Detachment/Spectra DET Item 4"
+    },
+    "Spectra_DET_Item_5": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra DET/Detachment/Spectra DET Item 5"
+    },
+    "Spectra_EXT_Item_1": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Antagonism/Spectra EXT Item 1"
+    },
+    "Spectra_EXT_Item_2": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Antagonism/Spectra EXT Item 2"
+    },
+    "Spectra_EXT_Item_3": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Antagonism/Spectra EXT Item 3"
+    },
+    "Spectra_EXT_Item_4": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Antagonism/Spectra EXT Item 4"
+    },
+    "Spectra_EXT_Item_5": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Antagonism/Spectra EXT Item 5"
+    },
+    "Spectra_EXT_Item_6": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Disinhibition/Spectra EXT Item 6"
+    },
+    "Spectra_EXT_Item_7": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Disinhibition/Spectra EXT Item 7"
+    },
+    "Spectra_EXT_Item_8": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Disinhibition/Spectra EXT Item 8"
+    },
+    "Aggressivitaet": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Aggressivität"
+    },
+    "Spectra_EXT_Item_10": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Substanzkonsum/Spectra EXT Item 10"
+    },
+    "Spectra_EXT_Item_11": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Substanzkonsum/Spectra EXT Item 11"
+    },
+    "Spectra_EXT_Item_12": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Substanzkonsum/Spectra EXT Item 12"
+    },
+    "Spectra_EXT_Item_13": {
+      "table": "assessments",
+      "codebook_ref": "pt:/Outcomemodul/Psychopathologie Selbstbericht/Spectra EXT/Substanzkonsum/Spectra EXT Item 13"
+    },
+    "globales_Wohlbefinden_VAS": {
+      "table": "assessments",
+      "codebook_ref": null,
+      "type_hint": "vas_100",
+      "not_null": true
+    },
+    "Alliance_Bond_Capacity_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Alliance Bond Capacity/Alliance Bond Capacity Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Alliance_Bond_Capacity_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Alliance Bond Capacity/Alliance Bond Capacity Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Alliance_Bond_Capacity_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Alliance Bond Capacity/Alliance Bond Capacity Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Alliance_Bond_Capacity_4": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Alliance Bond Capacity/Alliance Bond Capacity Item 4",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Persuasiveness_Credibility_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Persuasiveness/Credibility/Persuasiveness/Credibility Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Persuasiveness_Credibility_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Persuasiveness/Credibility/Persuasiveness/Credibility Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Goal_Consensus_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Goal Consensus/Goal Consensus Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Goal_Consensus_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Goal Consensus/Goal Consensus Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Goal_Consensus_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Goal Consensus/Goal Consensus Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Rupture_Repair_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Rupture Repaire/Rupture Repaire Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Rupture_Repair_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Rupture Repaire/Rupture Repaire Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Rupture_Repair_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Rupture Repaire/Rupture Repaire Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Ressource_Activation_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/ResQuelle Activation/ResQuelle Activation Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Ressource_Activation_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/ResQuelle Activation/ResQuelle Activation Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Ressource_Activation_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/ResQuelle Activation/ResQuelle Activation Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Congruence_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Congruence/Congruence Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Congruence_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Congruence/Congruence Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Managing_Countertransference_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Managing Countertransference/Managing Countertransference Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "Managing_Countertransference_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/Managing Countertransference/Managing Countertransference Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "CBT_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/CBT/CBT Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "CBT_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/CBT/CBT Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "CBT_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/CBT/CBT Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "DYN_1": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/DYN/DYN Item 1",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "DYN_2": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/DYN/DYN Item 2",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "DYN_3": {
+      "table": "process_ratings",
+      "codebook_ref": "pt:/Prozessmodul/DYN/DYN Item 3",
+      "enum_ref": "P_Faktor_Item_1"
+    },
+    "process_ratings.timepoint": {
+      "table": "process_ratings",
+      "sql_name": "timepoint",
+      "codebook_ref": null,
+      "type_hint": "timepoint_t",
+      "not_null": true
+    }
+  }
+}
